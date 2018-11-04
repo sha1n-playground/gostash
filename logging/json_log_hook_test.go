@@ -3,7 +3,7 @@ package logging
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/sha1n/gostash/utils"
+	"github.com/sha1n/go-playground/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"os"
