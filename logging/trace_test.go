@@ -25,10 +25,25 @@ func Test_TraceLogEntriesShouldContainTraceFields(t *testing.T) {
 
 	trace := NewTrace(expectedAction, entry)
 
-	trace.Log().Info()
+	trace.Entry().Info()
 
 	assertLastEntryWithAction(t, expectedAction, hook)
 	assertLastEntryHasTraceId(t, hook)
+}
+
+func Test_TraceAddFieldShouldAddTheSpecifiedFieldToTheTraceLogger(t *testing.T) {
+	hook, entry := newTestLogger()
+	expectedFieldName := randomStr()
+	expectedFieldValue := randomStr()
+
+	trace := NewTrace(randomStr(), entry).
+		AddField(expectedFieldName, expectedFieldValue)
+
+	trace.Entry().Info()
+	assertLastEntryHasFieldWith(expectedFieldName, expectedFieldValue, hook, t)
+
+	trace.NewSegment().Start(randomStr())
+	assertLastEntryHasFieldWith(expectedFieldName, expectedFieldValue, hook, t)
 }
 
 func Test_SegmentStartAndEndFunctionsShouldProduceLogEntriesWithStartAndEndMarkersRespectively(t *testing.T) {
@@ -270,6 +285,46 @@ func Test_WithErrorMarkersOnlyShouldProduceEndEventWithErrorWhenPresent(t *testi
 		hook)
 }
 
+func Test_WithDebugMarkersShouldProduceStartAndEndEventWithDebugLevel(t *testing.T) {
+	hook, entry := newTestLogger()
+	expectedAction := randomStr()
+	expectedSegment := randomStr()
+	expectedCustomMarker := randomStr()
+
+	segment := NewTrace(expectedAction, entry).
+		NewSegment().
+		WithDebugMarkers().
+		Start(expectedSegment)
+	assertLastEntryWithMarkerAndLevelWith(t, logrus.DebugLevel, expectedAction, expectedSegment, "start", hook)
+
+	segment.Mark(expectedCustomMarker)
+	assertLastEntryWithMarkerAndLevelWith(t, logrus.DebugLevel, expectedAction, expectedSegment, expectedCustomMarker, hook)
+
+	segment.End()
+	assertLastEntryWithMarkerAndLevelWith(t, logrus.DebugLevel, expectedAction, expectedSegment, "end", hook)
+}
+
+func Test_WithDebugMarkersShouldProduceEndEventWithErrorLevelWhenAnErrorWasReported(t *testing.T) {
+	hook, entry := newTestLogger()
+
+	expectedAction := randomStr()
+	expectedSegment := randomStr()
+	expectedMessage := randomStr()
+
+	segment := NewTrace(expectedAction, entry).
+		NewSegment().
+		WithDebugMarkers().
+		Start(expectedSegment)
+
+	segment.EndWithErrorIf(errors.New(expectedMessage))
+	assertLastEntryWithEndMarkerAnErrorAndWith(t,
+		expectedAction,
+		expectedSegment,
+		logrus.ErrorLevel,
+		expectedMessage,
+		hook)
+}
+
 func Test_AddFieldShouldAddTheSpecifiedFieldToTheSegment(t *testing.T) {
 	hook, entry := newTestLogger()
 	expectedFieldName := randomStr()
@@ -295,6 +350,7 @@ func Test_AddFieldShouldAddTheSpecifiedFieldToTheSegment(t *testing.T) {
 
 func newTestLogger() (*test.Hook, *logrus.Entry) {
 	nullLogger, hook := test.NewNullLogger()
+	nullLogger.Level = logrus.DebugLevel
 
 	entry := logrus.NewEntry(nullLogger)
 
@@ -317,11 +373,15 @@ func assertLastEntryWithEndMarkerAnErrorAndWith(t *testing.T, expectedAction str
 }
 
 func assertLastEntryWithMarkerAndWith(t *testing.T, expectedAction string, expectedSegment string, expectedMarker string, hook *test.Hook) {
+	assertLastEntryWithMarkerAndLevelWith(t, logrus.InfoLevel, expectedAction, expectedSegment, expectedMarker, hook)
+}
+
+func assertLastEntryWithMarkerAndLevelWith(t *testing.T, level logrus.Level, expectedAction string, expectedSegment string, expectedMarker string, hook *test.Hook) {
 	assertLastEntryWithAction(t, expectedAction, hook)
 	assertLastEntryWithSegment(t, expectedSegment, hook)
 	assertLastEntryHasTraceId(t, hook)
 	assertLastEntryHasFieldWith("marker", expectedMarker, hook, t)
-	assert.IsType(t, logrus.InfoLevel, hook.LastEntry().Level)
+	assert.IsType(t, level, hook.LastEntry().Level)
 }
 
 func assertLastEntryWithAction(t *testing.T, expectedAction string, hook *test.Hook) {

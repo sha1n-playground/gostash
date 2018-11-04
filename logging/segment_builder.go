@@ -9,6 +9,7 @@ type SegmentBuilder interface {
 	WithField(name string, value interface{}) SegmentBuilder
 	WithFields(fields map[string]interface{}) SegmentBuilder
 	WithErrorMarkersOnly() SegmentBuilder
+	WithDebugMarkers() SegmentBuilder
 	Start(segmentName string, args ...interface{}) Segment
 }
 
@@ -16,6 +17,7 @@ type segmentBuilder struct {
 	parent           *trace
 	errorMarkersOnly bool
 	logger           *logrus.Entry
+	markerLogMethod  string
 }
 
 func (builder *segmentBuilder) WithField(name string, value interface{}) SegmentBuilder {
@@ -28,6 +30,13 @@ func (builder *segmentBuilder) WithFields(fields map[string]interface{}) Segment
 
 	return builder
 }
+
+func (builder *segmentBuilder) WithDebugMarkers() SegmentBuilder {
+	builder.markerLogMethod = "Debug"
+
+	return builder
+}
+
 func (builder *segmentBuilder) WithErrorMarkersOnly() SegmentBuilder {
 	builder.errorMarkersOnly = true
 	return builder
@@ -42,11 +51,16 @@ func (builder *segmentBuilder) Start(segmentName string, args ...interface{}) Se
 				FieldNameSegment: segmentName,
 			})
 
+	if builder.markerLogMethod == "" {
+		builder.markerLogMethod = "Info"
+	}
+
 	var s Segment = &segment{
-		logger:    baseEntry,
-		parent:    builder.parent,
-		name:      segmentName,
-		startTime: start,
+		entry:           baseEntry,
+		parent:          builder.parent,
+		name:            segmentName,
+		startTime:       start,
+		markerLogMethod: builder.markerLogMethod,
 	}
 
 	if builder.errorMarkersOnly {
