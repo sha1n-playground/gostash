@@ -14,6 +14,7 @@ default: get lint format test
 
 get:
 	go get -t ./...
+	go get github.com/sha1n/go-playground/utils
 
 test:
 	$(call print_title, Running tests...)
@@ -27,9 +28,9 @@ prepare:
 
 format:
 	$(call print_title,Formatting go sources...)
-	gofmt -s -w .
+	gofmt -s -w logging
 
 
 lint:
 	$(call print_title,Lint...)
-	gofmt -d .
+	gofmt -d logging
