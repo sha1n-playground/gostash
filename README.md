@@ -2,6 +2,8 @@
 
 # gostash
 
+A utility on top of [logrus](https://github.com/sirupsen/logrus) for structured logging and tracing in logstash json format. 
+
 ```go
 import "github.com/sha1n/gostash/logging"
 
