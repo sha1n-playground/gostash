@@ -27,9 +27,9 @@ prepare:
 
 format:
 	$(call print_title,Formatting go sources...)
-	gofmt -s -w logging
+	gofmt -s -w .
 
 
 lint:
 	$(call print_title,Lint...)
-	gofmt -d logging
+	gofmt -d .
