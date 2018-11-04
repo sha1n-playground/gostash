@@ -2,6 +2,7 @@ package logging
 
 import (
 	"github.com/sirupsen/logrus"
+	"reflect"
 	"time"
 )
 
@@ -18,10 +19,11 @@ type Segment interface {
 }
 
 type segment struct {
-	logger    *logrus.Entry
-	parent    *trace
-	name      string
-	startTime time.Time
+	entry           *logrus.Entry
+	parent          *trace
+	name            string
+	startTime       time.Time
+	markerLogMethod string
 }
 
 type errorMarkersOnlySegment struct {
@@ -33,7 +35,7 @@ func (s *segment) Parent() Trace {
 }
 
 func (s *segment) End(args ...interface{}) {
-	s.endEntry().Info(args...)
+	logMarkerEntry(s.endEntry(), s.markerLogMethod, args...)
 }
 
 func (s *segment) EndWithErrorIf(err error, elseArgs ...interface{}) {
@@ -42,7 +44,7 @@ func (s *segment) EndWithErrorIf(err error, elseArgs ...interface{}) {
 	if err != nil {
 		entry.Error(err)
 	} else {
-		entry.Info(elseArgs...)
+		logMarkerEntry(entry, s.markerLogMethod, elseArgs...)
 	}
 }
 
@@ -52,39 +54,42 @@ func (s *segment) EndWithWarningIf(err error, elseArgs ...interface{}) {
 	if err != nil {
 		entry.Warn(err)
 	} else {
-		entry.Info(elseArgs...)
+		logMarkerEntry(entry, s.markerLogMethod, elseArgs...)
 
 	}
 }
 
 func (s *segment) Mark(marker string, args ...interface{}) Segment {
-	s.logger.WithFields(
+
+	entry := s.entry.WithFields(
 		logrus.Fields{
 			FieldNameSegment: s.name,
 			FieldNameMarker:  marker,
-		}).
-		Info(args...)
+		})
+
+	logMarkerEntry(entry, s.markerLogMethod, args...)
 
 	return s
 }
 
 func (s *segment) Log() *logrus.Entry {
-	return s.logger.WithField(FieldNameSegment, s.name)
+	return s.entry.WithField(FieldNameSegment, s.name)
 }
 
 func (s *segment) AddField(name string, value interface{}) Segment {
-	s.logger = s.logger.WithField(name, value)
+	s.entry = s.entry.WithField(name, value)
 
 	return s
 }
 
 func (s *segment) start(args ...interface{}) {
-	s.logger.WithField(FieldNameMarker, MarkerStart).
-		Info(args...)
+	entry := s.entry.WithField(FieldNameMarker, MarkerStart)
+
+	logMarkerEntry(entry, s.markerLogMethod, args...)
 }
 
 func (s *segment) endEntry() *logrus.Entry {
-	return s.logger.
+	return s.entry.
 		WithFields(
 			logrus.Fields{
 				FieldNameSegment:  s.name,
@@ -123,4 +128,12 @@ func (s *errorMarkersOnlySegment) start(args ...interface{}) {}
 
 func elapsedSec(startTime time.Time) float32 {
 	return float32(time.Since(startTime).Seconds())
+}
+
+func logMarkerEntry(entry *logrus.Entry, markerLogMethod string, args ...interface{}) {
+	parameters := make([]reflect.Value, len(args))
+	for i := range args {
+		parameters[i] = reflect.ValueOf(args[i])
+	}
+	reflect.ValueOf(entry).MethodByName(markerLogMethod).Call(parameters)
 }

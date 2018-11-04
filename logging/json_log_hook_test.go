@@ -19,14 +19,14 @@ func Test_NewJsonLogFileHook(t *testing.T) {
 	logFileName := path.Join(os.TempDir(), randomStr()+"-file.log")
 	defer os.Remove(logFileName)
 
-	obj := NewJsonLogFileHook(logFileName, logrus.TraceLevel, LogProperties{})
+	jsonLogHook := NewJsonLogFileHook(logFileName, logrus.TraceLevel, LogProperties{})
 
-	testNewJsonLogHook(obj, t)
+	testNewJsonLogHook(jsonLogHook, t)
 }
 
 func Test_NewJsonLogHook(t *testing.T) {
-	obj := NewJsonLogHook(logrus.TraceLevel, LogProperties{}, new(bytes.Buffer))
-	testNewJsonLogHook(obj, t)
+	jsonLogHook := NewJsonLogHook(logrus.TraceLevel, LogProperties{}, new(bytes.Buffer))
+	testNewJsonLogHook(jsonLogHook, t)
 }
 
 func Test_JsonLogFireProperties(t *testing.T) {
@@ -34,8 +34,6 @@ func Test_JsonLogFireProperties(t *testing.T) {
 
 	var expectedProperties = &LogProperties{
 		DcName:       randomStr(),
-		AppName:      randomStr(),
-		PodName:      randomStr(),
 		ServiceName:  randomStr(),
 		InstanceName: randomStr(),
 	}
@@ -51,8 +49,7 @@ func Test_JsonLogFirePartialProperties(t *testing.T) {
 	expect := assert.New(t)
 
 	var expectedProperties = &LogProperties{
-		DcName:  randomStr(),
-		AppName: randomStr(),
+		DcName: randomStr(),
 	}
 
 	jsonMap := fireAndInterceptAsMapWith(expectedProperties)
@@ -63,11 +60,11 @@ func Test_JsonLogFirePartialProperties(t *testing.T) {
 
 func fireAndInterceptAsMapWith(expectedProperties *LogProperties) map[string]string {
 	buffer := new(bytes.Buffer)
-	obj := NewJsonLogHook(logrus.DebugLevel, *expectedProperties, buffer)
+	jsonLogHook := NewJsonLogHook(logrus.DebugLevel, *expectedProperties, buffer)
 
 	entry := newLogEntry(logrus.New(), expectedProperties)
 	entry.Level = logrus.InfoLevel
-	obj.Fire(entry)
+	jsonLogHook.Fire(entry)
 
 	jsonMap := make(map[string]string)
 	json.Unmarshal([]byte(buffer.String()), &jsonMap)

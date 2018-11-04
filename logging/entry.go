@@ -13,8 +13,6 @@ type Config struct {
 
 type LogProperties struct {
 	DcName       string
-	AppName      string
-	PodName      string
 	ServiceName  string
 	InstanceName string
 }
@@ -25,8 +23,8 @@ func SetLogConfig(config Config) {
 	configureLogger(config)
 }
 
-func NewEntryFor(obj string) (retVal *logrus.Entry) {
-	retVal = loggerEntry.WithField("obj", obj)
+func NewEntry(name string) (retVal *logrus.Entry) {
+	retVal = loggerEntry.WithField("name", name)
 	return retVal
 }
 
@@ -53,5 +51,5 @@ func configureLogger(config Config) {
 	}
 
 	loggerEntry = logrus.NewEntry(logger)
-	NewEntryFor("logging").Info("Logging module configured successfully with", config)
+	NewEntry("logging").Info("Logging module configured successfully with", config)
 }

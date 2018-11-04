@@ -4,6 +4,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"io"
 	"os"
+	"reflect"
+	"strings"
 )
 
 type JsonLogHook struct {
@@ -42,31 +44,22 @@ func NewJsonLogHook(levelToSet logrus.Level, properties LogProperties, writer io
 	return retVal
 }
 
-// Fire is required to implement Logrus hook
-func (this *JsonLogHook) Fire(entry *logrus.Entry) error {
-	type printMethod func(args ...interface{})
-	var funcToCallForPrint printMethod
+// Hook implementation
+func (hook *JsonLogHook) Fire(entry *logrus.Entry) error {
+	fileEntry := hook.fileLogEntry.WithFields(entry.Data)
+	methodName := strings.Title(entry.Level.String())
 
-	entryTolog := this.fileLogEntry.WithFields(entry.Data)
-	switch entry.Level {
-	case logrus.DebugLevel:
-		funcToCallForPrint = entryTolog.Debug
-	case logrus.InfoLevel:
-		funcToCallForPrint = entryTolog.Info
-	case logrus.WarnLevel:
-		funcToCallForPrint = entryTolog.Warn
-	case logrus.ErrorLevel:
-		funcToCallForPrint = entryTolog.Error
-	case logrus.FatalLevel:
-		funcToCallForPrint = entryTolog.Fatal
-	case logrus.PanicLevel:
-		funcToCallForPrint = entryTolog.Panic
-	}
-	funcToCallForPrint(entry.Message)
+	logMethod := reflect.ValueOf(fileEntry).MethodByName(methodName)
+
+	parameters := make([]reflect.Value, 1)
+	parameters[0] = reflect.ValueOf(entry.Message)
+
+	logMethod.Call(parameters)
+
 	return nil
 }
 
-// Levels Required for logrus hook implementation
+// Hook implementation
 func (hook *JsonLogHook) Levels() []logrus.Level {
 	return hook.levels
 }
