@@ -19,13 +19,13 @@ func Test_NewJsonLogFileHook(t *testing.T) {
 	logFileName := path.Join(os.TempDir(), randomStr()+"-file.log")
 	defer os.Remove(logFileName)
 
-	obj := NewJsonLogFileHook(logFileName, logrus.DebugLevel, LogProperties{})
+	obj := NewJsonLogFileHook(logFileName, logrus.TraceLevel, LogProperties{})
 
 	testNewJsonLogHook(obj, t)
 }
 
 func Test_NewJsonLogHook(t *testing.T) {
-	obj := NewJsonLogHook(logrus.DebugLevel, LogProperties{}, new(bytes.Buffer))
+	obj := NewJsonLogHook(logrus.TraceLevel, LogProperties{}, new(bytes.Buffer))
 	testNewJsonLogHook(obj, t)
 }
 
