@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/sha1n/gostash.svg?branch=master)](https://travis-ci.com/sha1n/gostash)
+[![CI](https://github.com/sha1n/gostash/actions/workflows/go.yml/badge.svg)](https://github.com/sha1n/gostash/actions/workflows/go.yml)
 
 # gostash
 
